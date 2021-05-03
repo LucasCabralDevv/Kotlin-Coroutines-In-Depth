@@ -35,6 +35,7 @@ import com.raywenderlich.kotlin.coroutines.di.API_KEY
 import com.raywenderlich.kotlin.coroutines.data.model.Movie
 import com.raywenderlich.kotlin.coroutines.data.model.Result
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import java.io.IOException
 
@@ -47,10 +48,12 @@ class MovieRepositoryImpl(
 ) : MovieRepository {
 
     override suspend fun getMovies(): Result<List<Movie>> = withContext(Dispatchers.IO) {
-        val cachedMovies = movieDao.getSavedMovies()
+        val cachedMoviesDeferred = async { movieDao.getSavedMovies() }
+        val resultDeferred = async { movieApiService.getMovies(API_KEY).execute() }
 
+        val cachedMovies = cachedMoviesDeferred.await()
         try {
-            val result = movieApiService.getMovies(API_KEY).execute()
+            val result = resultDeferred.await()
             val moviesResponse = result.body()?.movies
             if (result.isSuccessful && moviesResponse != null) {
                 Result(moviesResponse, null)
