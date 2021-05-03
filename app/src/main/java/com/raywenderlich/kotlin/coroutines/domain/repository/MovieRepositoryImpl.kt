@@ -48,6 +48,7 @@ class MovieRepositoryImpl(
 ) : MovieRepository {
 
     override suspend fun getMovies(): Result<List<Movie>> = withContext(Dispatchers.IO) {
+
         val cachedMoviesDeferred = async { movieDao.getSavedMovies() }
         val resultDeferred = async { movieApiService.getMovies(API_KEY).execute() }
 
