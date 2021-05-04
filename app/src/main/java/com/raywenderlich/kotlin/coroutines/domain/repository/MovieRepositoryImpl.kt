@@ -35,6 +35,7 @@ import com.raywenderlich.kotlin.coroutines.data.database.MovieDao
 import com.raywenderlich.kotlin.coroutines.di.API_KEY
 import com.raywenderlich.kotlin.coroutines.data.model.Movie
 import com.raywenderlich.kotlin.coroutines.data.model.Result
+import com.raywenderlich.kotlin.coroutines.utils.logCoroutine
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -50,12 +51,15 @@ class MovieRepositoryImpl(
 ) : MovieRepository {
 
     override suspend fun getMovies(): List<Movie> = withContext(contextProvider.context()) {
-
-        //throw IllegalStateException("Test error")
-
-        val cachedMoviesDeferred = async { movieDao.getSavedMovies() }
-        val resultDeferred = async { movieApiService.getMovies(API_KEY).execute() }
-
+        logCoroutine("getMovies", coroutineContext)
+        val cachedMoviesDeferred = async {
+            logCoroutine("getSavedMovies", coroutineContext)
+            movieDao.getSavedMovies()
+        }
+        val resultDeferred = async {
+            logCoroutine("execute", coroutineContext)
+            movieApiService.getMovies(API_KEY).execute()
+        }
         val cachedMovies = cachedMoviesDeferred.await()
         val apiMovies = resultDeferred.await().body()?.movies
 
