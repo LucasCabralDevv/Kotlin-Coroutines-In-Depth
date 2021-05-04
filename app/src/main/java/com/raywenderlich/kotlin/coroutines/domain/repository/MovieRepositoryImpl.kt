@@ -35,10 +35,10 @@ import com.raywenderlich.kotlin.coroutines.data.database.MovieDao
 import com.raywenderlich.kotlin.coroutines.di.API_KEY
 import com.raywenderlich.kotlin.coroutines.data.model.Movie
 import com.raywenderlich.kotlin.coroutines.data.model.Result
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import java.lang.IllegalStateException
 
 /**
  * Connects to the end entity, and exposes functionality to the user.
@@ -49,26 +49,16 @@ class MovieRepositoryImpl(
     private val contextProvider: CoroutineContextProvider
 ) : MovieRepository {
 
-    override suspend fun getMovies(): Result<List<Movie>> = withContext(contextProvider.context()) {
+    override suspend fun getMovies(): List<Movie> = withContext(contextProvider.context()) {
+
+        //throw IllegalStateException("Test error")
 
         val cachedMoviesDeferred = async { movieDao.getSavedMovies() }
         val resultDeferred = async { movieApiService.getMovies(API_KEY).execute() }
 
         val cachedMovies = cachedMoviesDeferred.await()
-        try {
-            val result = resultDeferred.await()
-            val moviesResponse = result.body()?.movies
-            if (result.isSuccessful && moviesResponse != null) {
-                Result(moviesResponse, null)
-            } else {
-                Result(cachedMovies, null)
-            }
-        } catch (error: Throwable) {
-            if (error is IOException && cachedMovies.isEmpty()) {
-                Result(null, error)
-            } else {
-                Result(cachedMovies, null)
-            }
-        }
+        val apiMovies = resultDeferred.await().body()?.movies
+
+        apiMovies ?: cachedMovies
     }
 }
