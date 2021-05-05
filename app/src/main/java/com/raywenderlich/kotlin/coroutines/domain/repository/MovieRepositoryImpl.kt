@@ -56,12 +56,12 @@ class MovieRepositoryImpl(
             logCoroutine("getSavedMovies", coroutineContext)
             movieDao.getSavedMovies()
         }
-        val resultDeferred = async {
-            logCoroutine("execute", coroutineContext)
-            movieApiService.getMovies(API_KEY).execute()
-        }
         val cachedMovies = cachedMoviesDeferred.await()
-        val apiMovies = resultDeferred.await().body()?.movies
+        val apiMovies = try {
+            movieApiService.getMovies(API_KEY).movies
+        } catch (error: Throwable) {
+            null
+        }
 
         apiMovies ?: cachedMovies
     }
