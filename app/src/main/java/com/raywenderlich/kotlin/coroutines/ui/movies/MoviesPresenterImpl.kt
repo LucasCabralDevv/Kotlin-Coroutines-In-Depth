@@ -30,6 +30,8 @@
 package com.raywenderlich.kotlin.coroutines.ui.movies
 
 import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.raywenderlich.kotlin.coroutines.domain.repository.MovieRepository
 import com.raywenderlich.kotlin.coroutines.utils.logCoroutine
 import kotlinx.coroutines.*
@@ -38,12 +40,13 @@ import kotlin.coroutines.CoroutineContext
 /**
  * Handles the business logic calls, reacting to UI events.
  */
-class MoviesPresenterImpl(private val movieRepository: MovieRepository) : MoviesPresenter, CoroutineScope {
+class MoviesPresenterImpl(private val movieRepository: MovieRepository) : ViewModel(),
+    MoviesPresenter {
 
     private val coroutineExceptionHandler = CoroutineExceptionHandler { coroutineContext, throwable ->
         throwable.printStackTrace()
     }
-    private val parentJob = SupervisorJob()
+
     private lateinit var moviesView: MoviesView
 
     override fun setView(moviesView: MoviesView) {
@@ -51,7 +54,7 @@ class MoviesPresenterImpl(private val movieRepository: MovieRepository) : Movies
     }
 
     override fun getData() {
-        launch {
+        viewModelScope.launch {
             logCoroutine("getData", coroutineContext)
             delay(500)
             val result = runCatching { movieRepository.getMovies() }
@@ -70,11 +73,4 @@ class MoviesPresenterImpl(private val movieRepository: MovieRepository) : Movies
     private fun handleError(throwable: Throwable) {
         moviesView.showError(throwable)
     }
-
-    override fun stop() {
-        parentJob.cancelChildren()
-    }
-
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Main + parentJob + coroutineExceptionHandler
 }
